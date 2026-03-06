@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hitster Player</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0a0a;
+      --surface: #141414;
+      --accent: #1DB954;
+      --text: #f0f0f0;
+      --muted: #555;
+      --radius: 20px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      overflow: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(29,185,84,0.08) 0%, transparent 70%);
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+    }
+
+    #spotify-iframe-container {
+      position: fixed !important;
+      top: -9999px !important;
+      left: -9999px !important;
+      width: 0 !important;
+      height: 0 !important;
+      overflow: hidden !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
+      clip: rect(0,0,0,0) !important;
+      clip-path: inset(50%) !important;
+    }
+    #spotify-iframe-container * {
+      width: 0 !important;
+      height: 0 !important;
+      min-width: 0 !important;
+      min-height: 0 !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
+    }
+
+    .card {
+      position: relative;
+      z-index: 1;
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 48px 40px 40px;
+      width: 100%;
+      max-width: 380px;
+      text-align: center;
+      border: 1px solid #222;
+      box-shadow: 0 40px 80px rgba(0,0,0,0.6);
+    }
+
+    .logo {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 13px;
+      letter-spacing: 4px;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 40px;
+    }
+
+    .vinyl-wrap {
+      position: relative;
+      width: 160px;
+      height: 160px;
+      margin: 0 auto 40px;
+    }
+
+    .vinyl {
+      width: 160px;
+      height: 160px;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at 50% 50%, #1a1a1a 18%, transparent 18%),
+        repeating-radial-gradient(circle at 50% 50%, #1a1a1a 0px, #222 2px, #1a1a1a 4px);
+      border: 2px solid #333;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .vinyl.spinning { animation: spin 2s linear infinite; }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .vinyl-center {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 20px rgba(29,185,84,0.4);
+    }
+
+    .vinyl-center::after {
+      content: '';
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--surface);
+    }
+
+    .progress-ring-wrap {
+      position: absolute;
+      top: -8px; left: -8px;
+      width: 176px;
+      height: 176px;
+      transform: rotate(-90deg);
+    }
+
+    .progress-ring {
+      fill: none;
+      stroke: var(--accent);
+      stroke-width: 3;
+      stroke-linecap: round;
+      stroke-dasharray: 534;
+      stroke-dashoffset: 534;
+      transition: stroke-dashoffset 0.5s linear;
+      filter: drop-shadow(0 0 4px rgba(29,185,84,0.6));
+    }
+
+    .status {
+      font-size: 13px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 28px;
+      min-height: 20px;
+    }
+    .status.active { color: var(--accent); }
+    .status.error  { color: #e05555; }
+
+    .play-btn {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: var(--accent);
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 32px;
+      transition: transform 0.15s ease, box-shadow 0.2s;
+      box-shadow: 0 8px 24px rgba(29,185,84,0.35);
+    }
+    .play-btn:hover   { transform: scale(1.08); box-shadow: 0 12px 32px rgba(29,185,84,0.5); }
+    .play-btn:active  { transform: scale(0.96); }
+    .play-btn:disabled { opacity: 0.4; cursor: default; transform: none; box-shadow: none; }
+
+    .play-btn svg { width: 28px; height: 28px; fill: #000; }
+    .play-icon  { margin-left: 3px; }
+    .pause-icon { margin-left: 0; }
+
+    .timer {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 48px;
+      letter-spacing: 3px;
+      color: var(--text);
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+
+    .timer-label {
+      font-size: 11px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .error-msg {
+      display: none;
+      background: rgba(224,85,85,0.1);
+      border: 1px solid rgba(224,85,85,0.3);
+      border-radius: 12px;
+      padding: 16px;
+      font-size: 13px;
+      color: #e05555;
+      margin-top: 24px;
+      line-height: 1.6;
+    }
+    .error-msg.visible { display: block; }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <div class="logo">Hitster</div>
+
+    <div class="vinyl-wrap">
+      <svg class="progress-ring-wrap" viewBox="0 0 176 176">
+        <circle class="progress-ring" cx="88" cy="88" r="85" id="progressRing"/>
+      </svg>
+      <div class="vinyl" id="vinyl">
+        <div class="vinyl-center"></div>
+      </div>
+    </div>
+
+    <div class="status" id="status">Loading…</div>
+
+    <button class="play-btn" id="playBtn" onclick="togglePlay()" disabled>
+      <svg id="btnIcon" viewBox="0 0 24 24" class="play-icon">
+        <path d="M8 5v14l11-7z"/>
+      </svg>
+    </button>
+
+    <div class="timer" id="timer">0:30</div>
+    <div class="timer-label">seconds</div>
+
+    <div class="error-msg" id="errorMsg"></div>
+  </div>
+
+  <div id="spotify-iframe-container"></div>
+
+  <script src="https://open.spotify.com/embed/iframe-api/v1" async></script>
+
+  <script>
+    const RING_CIRC = 534;
+    const statusEl = document.getElementById('status');
+    const timerEl  = document.getElementById('timer');
+    const vinyl    = document.getElementById('vinyl');
+    const ring     = document.getElementById('progressRing');
+    const playBtn  = document.getElementById('playBtn');
+    const btnIcon  = document.getElementById('btnIcon');
+    const errorMsg = document.getElementById('errorMsg');
+
+    let embedController = null;
+    let isPlaying = false;
+    let timerInterval = null;
+    let elapsed = 0;
+    const DURATION = 30;
+
+    const params  = new URLSearchParams(window.location.search);
+    const trackId = params.get('id');
+
+    if (!trackId) {
+      showError("No track ID found.<br>This QR code may be invalid.");
+    }
+
+    window.onSpotifyIframeApiReady = (IFrameAPI) => {
+      if (!trackId) return;
+
+      const container = document.getElementById('spotify-iframe-container');
+      const options   = { uri: `spotify:track:${trackId}`, width: 300, height: 80 };
+
+      IFrameAPI.createController(container, options, (controller) => {
+        embedController = controller;
+
+        controller.addListener('ready', () => {
+          setStatus('Ready', false);
+          playBtn.disabled = false;
+        });
+
+        controller.addListener('playback_update', (e) => {
+          if (!e.data) return;
+          const { isPaused, position, duration } = e.data;
+          if (!isPaused && position >= Math.min(DURATION * 1000, duration) && duration > 0) {
+            onEnd();
+          }
+        });
+
+        controller.addListener('error', () => {
+          showError("Couldn't load this track.<br>Preview may not be available.");
+        });
+      });
+    };
+
+    function togglePlay() {
+      if (!embedController) return;
+      isPlaying ? pause() : play();
+    }
+
+    function play() {
+      embedController.resume();
+      isPlaying = true;
+      vinyl.classList.add('spinning');
+      btnIcon.outerHTML = '<svg id="btnIcon" viewBox="0 0 24 24" class="pause-icon"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>';
+      setStatus('Playing', true);
+      startTimer();
+    }
+
+    function pause() {
+      embedController.pause();
+      isPlaying = false;
+      vinyl.classList.remove('spinning');
+      document.getElementById('btnIcon').outerHTML = '<svg id="btnIcon" viewBox="0 0 24 24" class="play-icon"><path d="M8 5v14l11-7z"/></svg>';
+      setStatus('Paused', false);
+      clearInterval(timerInterval);
+    }
+
+    function startTimer() {
+      clearInterval(timerInterval);
+      const startWall = Date.now() - (elapsed * 1000);
+
+      timerInterval = setInterval(() => {
+        elapsed = (Date.now() - startWall) / 1000;
+        const remaining = Math.max(0, DURATION - elapsed);
+        timerEl.textContent = `0:${Math.ceil(remaining).toString().padStart(2, '0')}`;
+        ring.style.strokeDashoffset = RING_CIRC * (1 - Math.min(elapsed / DURATION, 1));
+
+        if (remaining <= 0) {
+          clearInterval(timerInterval);
+          onEnd();
+        }
+      }, 100);
+    }
+
+    function onEnd() {
+      if (embedController) embedController.pause();
+      isPlaying = false;
+      clearInterval(timerInterval);
+      vinyl.classList.remove('spinning');
+      playBtn.style.background = '#333';
+      playBtn.style.boxShadow  = 'none';
+      playBtn.disabled = true;
+      setStatus('Done', false);
+      timerEl.textContent = '0:00';
+      ring.style.strokeDashoffset = 0;
+    }
+
+    function setStatus(text, active) {
+      statusEl.textContent = text;
+      statusEl.className   = 'status' + (active ? ' active' : '');
+    }
+
+    function showError(msg) {
+      errorMsg.innerHTML = msg;
+      errorMsg.classList.add('visible');
+      statusEl.textContent = 'Error';
+      statusEl.className   = 'status error';
+      playBtn.disabled = true;
+    }
+  </script>
+</body>
+</html>
