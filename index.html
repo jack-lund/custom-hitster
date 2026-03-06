@@ -21,12 +21,19 @@
       background: var(--bg);
       color: var(--text);
       font-family: 'DM Sans', sans-serif;
-      min-height: 100vh;
+      height: 100vh;
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: 1fr auto;
+      align-items: start;
+    }
+
+    .card-wrap {
       display: flex;
       align-items: center;
       justify-content: center;
+      height: 100vh;
       padding: 24px;
-      overflow: hidden;
     }
 
     body::before {
@@ -41,29 +48,14 @@
     }
 
     #spotify-iframe-container {
-      position: fixed !important;
-      top: -9999px !important;
-      left: -9999px !important;
-      width: 0 !important;
-      height: 0 !important;
-      overflow: hidden !important;
-      opacity: 0 !important;
-      pointer-events: none !important;
-      clip: rect(0,0,0,0) !important;
-      clip-path: inset(50%) !important;
-    }
-    #spotify-iframe-container * {
-      width: 0 !important;
-      height: 0 !important;
-      min-width: 0 !important;
-      min-height: 0 !important;
-      opacity: 0 !important;
-      pointer-events: none !important;
+      width: 100%;
+      flex-shrink: 0;
+      pointer-events: none;
     }
 
     .card {
       position: relative;
-      z-index: 1;
+      z-index: 10;
       background: var(--surface);
       border-radius: var(--radius);
       padding: 48px 40px 40px;
@@ -213,6 +205,7 @@
 </head>
 <body>
 
+  <div class="card-wrap">
   <div class="card">
     <div class="logo">Hitster</div>
 
@@ -237,6 +230,7 @@
     <div class="timer-label">seconds</div>
 
     <div class="error-msg" id="errorMsg"></div>
+  </div>
   </div>
 
   <div id="spotify-iframe-container"></div>
